@@ -18,6 +18,7 @@ import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements RecyclerAdapter.OnCardListener {
@@ -36,7 +37,7 @@ public class MainActivity extends AppCompatActivity implements RecyclerAdapter.O
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                addEvent();
+                addEvent(-1);
             }
         });
 
@@ -52,14 +53,24 @@ public class MainActivity extends AppCompatActivity implements RecyclerAdapter.O
     }
 
     private void init_recycler() {
-        List<Events>eventsList = null;
+        List<Events>eventsList = new ArrayList<>();
+        List<Events>eventsListBackup = new ArrayList<>();
         eventsList = (dataManager.getData(this));
-        if(eventsList == null)
-            return;
-        rv_events = findViewById(R.id.rv_events);
-        ArrayList<Events>eventsArrayList = new ArrayList<>();
 
-        eventsArrayList.addAll(eventsList);
+        if(eventsList.isEmpty())
+            return;
+
+        rv_events = findViewById(R.id.rv_events);
+
+        for(Events event: eventsList){
+            if(!event.getC().before(Calendar.getInstance())){
+                eventsListBackup.add(event);
+            }
+        }
+        dataManager.saveData(eventsListBackup, this);
+        ArrayList<Events>eventsArrayList = new ArrayList<>();
+        eventsArrayList.addAll(eventsListBackup);
+
         RecyclerAdapter recyclerAdapter = new RecyclerAdapter(this,eventsArrayList, this::onCardClick);
         rv_events.setAdapter(recyclerAdapter);
         rv_events.setLayoutManager(new LinearLayoutManager(this));
@@ -67,15 +78,19 @@ public class MainActivity extends AppCompatActivity implements RecyclerAdapter.O
 
 
 
-    private void addEvent() {
+    private void addEvent(int pos) {
         Intent it_goToEvent = new Intent(MainActivity.this, EventActivity.class);
+        it_goToEvent.putExtra("Pos",pos);
         startActivity(it_goToEvent);
+
     }
 
     @Override
     public void onCardClick(int position) {
-
+        addEvent(position);
     }
+
+
 
 
 }

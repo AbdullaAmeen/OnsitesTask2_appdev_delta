@@ -1,14 +1,21 @@
 package com.example.eventscheduler;
 
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.DialogFragment;
 
+import android.app.AlarmManager;
 import android.app.DatePickerDialog;
+import android.app.PendingIntent;
 import android.content.Context;
+import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.DatePicker;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.TimePicker;
@@ -26,25 +33,37 @@ public class EventActivity extends AppCompatActivity implements DatePicker.OnDat
     TextView tv_dateAndTime;
     ImageView im_getDate;
     Events event;
+    EditText et_eventName, et_eventDesc;
     DataManagement dataManager = new DataManagement();
-    Button bt_save;
+    Button bt_save, bt_delete;
+    private int pos;
+    @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_event);
+        context=this;
         timePicker = findViewById(R.id.time_picker);
         tv_dateAndTime = findViewById(R.id.tv_timeanddate);
         im_getDate = findViewById(R.id.iv_date);
         bt_save = findViewById(R.id.bt_save);
-        event= new Events();
-        context=this;
+        bt_delete = findViewById(R.id.bt_delete);
+        et_eventDesc = findViewById(R.id.et_eventDesc);
+        et_eventName = findViewById(R.id.et_eventName);
+        getData();
+
         Calendar now = Calendar.getInstance();
-        bt_save.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                save();
+        View.OnClickListener onClickListener= v ->  {
+            Button button = (Button) v;
+            if(button.getId() == R.id.bt_delete){
+                delete();
             }
-        });
+            else
+                save();
+        };
+        bt_save.setOnClickListener(onClickListener);
+        bt_delete.setOnClickListener(onClickListener);
+
         timePicker.setOnTimeChangedListener(new TimePicker.OnTimeChangedListener() {
             @Override
             public void onTimeChanged(TimePicker view, int hourOfDay, int minute) {
@@ -74,7 +93,7 @@ public class EventActivity extends AppCompatActivity implements DatePicker.OnDat
                         }
                         updateView(event.getC());
                     }
-                },now.get(Calendar.YEAR),now.get(Calendar.MONTH),now.get(Calendar.DAY_OF_MONTH));
+                },event.getC().get(Calendar.YEAR),event.getC().get(Calendar.MONTH),event.getC().get(Calendar.DAY_OF_MONTH));
                 datePickerDialog.show();
             }
         });
@@ -82,13 +101,82 @@ public class EventActivity extends AppCompatActivity implements DatePicker.OnDat
 
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    private void getData() {
+        Intent intent = getIntent();
+
+        pos=intent.getIntExtra("Pos", -1);
+        List<Events> events = new ArrayList<>();
+        if(dataManager.getData(context) != null && pos !=-1) {
+            events.addAll(dataManager.getData(context));
+            event=events.get(pos);
+            et_eventDesc.setText(event.getEventDesc());
+            et_eventName.setText(event.getEventName());
+            timePicker.setHour(event.getC().get(Calendar.HOUR_OF_DAY));
+            timePicker.setMinute(event.getC().get(Calendar.MINUTE));
+        }
+        else
+            event = new Events();
+
+    }
+
+    private void delete() {
+        List<Events> events = new ArrayList<>();
+        if(dataManager.getData(context) == null)
+            finish();
+        else {
+            events.addAll(dataManager.getData(context));
+            events.remove(pos);
+            dataManager.saveData(events, context);
+            finish();
+        }
+    }
+
     private void save() {
+
+        Log.v("tag","nodiea " + et_eventName.getText());
+        if(et_eventName.getText().length()==0){
+            Toast.makeText(context, "Please Enter Event Name", Toast.LENGTH_SHORT).show();
+            Log.d("tagg","nodiea");
+            return;
+        }
+        if(event.getC().before(Calendar.getInstance())) {
+            Toast.makeText(context, "Scheduled for Tomorrow", Toast.LENGTH_SHORT).show();
+            event.getC().add(Calendar.DATE, 1);
+
+        }
+        event.setAlarmOn(true);
+        event.setEventName(et_eventName.getText().toString());
+        event.setEventDesc(et_eventDesc.getText().toString());
         List<Events> events = new ArrayList<>();
         if(dataManager.getData(context) != null)
-         events.addAll(dataManager.getData(context));
+            events.addAll(dataManager.getData(context));
         events.add(event);
         dataManager.saveData(events,context);
+        setAlarm();
         finish();
+
+    }
+
+    private void setAlarm() {
+        Log.v("set","SetAlarm");
+        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        Intent intent = new Intent(this, NotificationManagement.class);
+        intent.putExtra("Name",event.getEventName());
+        intent.putExtra("Desc",event.getEventDesc());
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(this,pos,intent,0);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            alarmManager.setExact(AlarmManager.RTC, event.getC().getTimeInMillis(), pendingIntent);
+            Log.v("set","SetExact");
+        }
+        else
+            alarmManager.set(AlarmManager.RTC, event.getC().getTimeInMillis(), pendingIntent);
+
+    }
+    private void cancelAlarm(Calendar calendar){
+        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        Intent intent = new Intent(this, NotificationManagement.class);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(this,pos,intent,0);
 
     }
 
@@ -109,8 +197,6 @@ public class EventActivity extends AppCompatActivity implements DatePicker.OnDat
 
 }
 /*
-if(event.getC().before(Calendar.getInstance())) {
-                    Toast.makeText(context, "Scheduled for Tomorrow", Toast.LENGTH_SHORT).show();
-                    event.getC().add(Calendar.DATE, 1);
+
                 }
  */

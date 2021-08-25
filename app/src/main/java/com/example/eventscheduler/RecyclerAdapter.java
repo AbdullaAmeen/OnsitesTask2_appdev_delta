@@ -39,8 +39,9 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ViewHo
         Events event = eventsArrayList.get(position);
         holder.tv_name.setText(event.getEventName());
         holder.tv_desc.setText(event.getEventDesc());
-        holder.tv_time.setText(DateFormat.getTimeInstance(DateFormat.DEFAULT).format(event.getC().getTime()) );
-        holder.sh_toggle.setText(DateFormat.getTimeInstance(DateFormat.DEFAULT).format(event.getTime()));
+        holder.tv_time.setText(DateFormat.getTimeInstance(DateFormat.DEFAULT).format(event.getC().getTime())  + " " + DateFormat.getDateInstance(DateFormat.DEFAULT).format(event.getC().getTime()));
+
+
 
     }
 
@@ -63,7 +64,6 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ViewHo
             lt_parent = itemView.findViewById(R.id.lt_parent);
             tv_desc = itemView.findViewById(R.id.tv_eventdesc);
             tv_time = itemView.findViewById(R.id.tv_eventTIme);
-            sh_toggle = itemView.findViewById(R.id.sh_eventSwitch);
             this.onCardListener = onCardListener;
 
             itemView.setOnClickListener(this);
@@ -73,6 +73,8 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ViewHo
         public void onClick(View v) {
             onCardListener.onCardClick(getAdapterPosition());
         }
+
+
     }
 
     public interface OnCardListener{
