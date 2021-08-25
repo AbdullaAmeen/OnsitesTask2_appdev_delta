@@ -52,7 +52,7 @@ public class MainActivity extends AppCompatActivity implements RecyclerAdapter.O
         SharedPreferences sharedPreferences = this.getSharedPreferences(STORE_FILE_NAME, Context.MODE_PRIVATE);
 
         SharedPreferences.Editor editor = sharedPreferences.edit();
-        G
+        Gson
         editor.putString(key, json);
             editor.commit();
         }
