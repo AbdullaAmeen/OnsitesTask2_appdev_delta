@@ -5,13 +5,14 @@ import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
+import android.widget.Switch;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.text.DateFormat;
 import java.util.ArrayList;
 
 public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ViewHolder> {
@@ -35,11 +36,11 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ViewHo
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        Events events = eventsArrayList.get(position);
-     /*   if(!events.getBreeds().isEmpty())
-            holder.tv_name.setText(events.getBreeds().get(0).getName());
-        Picasso.get().load(events.getUrl()).into(holder.im_dogs);*/
-
+        Events event = eventsArrayList.get(position);
+        holder.tv_name.setText(event.getEventName());
+        holder.tv_desc.setText(event.getEventDesc());
+        holder.tv_time.setText(DateFormat.getTimeInstance(DateFormat.DEFAULT).format(event.getC().getTime()) );
+        holder.sh_toggle.setText(DateFormat.getTimeInstance(DateFormat.DEFAULT).format(event.getTime()));
 
     }
 
@@ -54,13 +55,15 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ViewHo
     public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
         OnCardListener onCardListener;
         ConstraintLayout lt_parent;
-        TextView tv_name;
-        ImageView im_dogs;
+        TextView tv_name, tv_desc, tv_time;
+        Switch sh_toggle;
         public ViewHolder(View itemView, OnCardListener onCardListener) {
             super(itemView);
-          /*  tv_name = itemView.findViewById(R.id.tv_name);
+            tv_name = itemView.findViewById(R.id.tv_EventName);
             lt_parent = itemView.findViewById(R.id.lt_parent);
-            im_dogs = itemView.findViewById(R.id.im_dogs);*/
+            tv_desc = itemView.findViewById(R.id.tv_eventdesc);
+            tv_time = itemView.findViewById(R.id.tv_eventTIme);
+            sh_toggle = itemView.findViewById(R.id.sh_eventSwitch);
             this.onCardListener = onCardListener;
 
             itemView.setOnClickListener(this);

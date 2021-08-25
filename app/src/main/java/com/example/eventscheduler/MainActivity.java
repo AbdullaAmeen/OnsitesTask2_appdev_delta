@@ -1,28 +1,38 @@
 package com.example.eventscheduler;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.app.usage.UsageEvents;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements RecyclerAdapter.OnCardListener {
-    private static final String STORE_FILE_NAME = "Store_EventScheduler";
+
     FloatingActionButton fab;
     RecyclerView rv_events;
-    RecyclerAdapter recyclerAdapter;
+
+
+    DataManagement dataManager = new DataManagement();
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         fab = findViewById(R.id.fab);
-        rv_events.findViewById(R.id.rv_events);
-        init_recycler();
+
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -35,12 +45,31 @@ public class MainActivity extends AppCompatActivity implements RecyclerAdapter.O
 
     }
 
-    private void init_recycler() {
-
+    @Override
+    protected void onStart() {
+        super.onStart();
+        init_recycler();
     }
 
-    private void addEvent() {
+    private void init_recycler() {
+        List<Events>eventsList = null;
+        eventsList = (dataManager.getData(this));
+        if(eventsList == null)
+            return;
+        rv_events = findViewById(R.id.rv_events);
+        ArrayList<Events>eventsArrayList = new ArrayList<>();
 
+        eventsArrayList.addAll(eventsList);
+        RecyclerAdapter recyclerAdapter = new RecyclerAdapter(this,eventsArrayList, this::onCardClick);
+        rv_events.setAdapter(recyclerAdapter);
+        rv_events.setLayoutManager(new LinearLayoutManager(this));
+    }
+
+
+
+    private void addEvent() {
+        Intent it_goToEvent = new Intent(MainActivity.this, EventActivity.class);
+        startActivity(it_goToEvent);
     }
 
     @Override
@@ -48,18 +77,5 @@ public class MainActivity extends AppCompatActivity implements RecyclerAdapter.O
 
     }
 
-    public void saveDataInt(String key, int data) {
-        SharedPreferences sharedPreferences = this.getSharedPreferences(STORE_FILE_NAME, Context.MODE_PRIVATE);
 
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        Gson
-        editor.putString(key, json);
-            editor.commit();
-        }
-    }
-
-    public int getDataInt(String key) {
-        SharedPreferences sharedPreferences = this.getSharedPreferences("HighScore", Context.MODE_PRIVATE);
-        return sharedPreferences.getInt(key, 0);
-    }
 }
