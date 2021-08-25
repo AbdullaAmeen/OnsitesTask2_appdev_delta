@@ -57,7 +57,7 @@ public class MainActivity extends AppCompatActivity implements RecyclerAdapter.O
         List<Events>eventsListBackup = new ArrayList<>();
         eventsList = (dataManager.getData(this));
 
-        if(eventsList.isEmpty())
+        if(eventsList == null)
             return;
 
         rv_events = findViewById(R.id.rv_events);
