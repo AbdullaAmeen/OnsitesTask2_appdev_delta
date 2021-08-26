@@ -6,13 +6,20 @@ public class Events {
     private String eventName;
     private String eventDesc;
     private Calendar c;
-    private boolean alarmOn;
+    private int id;
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
 
     public Events() {
         this.eventName = new String();
         this.eventDesc = new String();
         this.c = Calendar.getInstance();
-        this.alarmOn = false;
     }
 
     public String getEventName() {
@@ -39,11 +46,5 @@ public class Events {
         this.c = c;
     }
 
-    public boolean isAlarmOn() {
-        return alarmOn;
-    }
 
-    public void setAlarmOn(boolean alarmOn) {
-        this.alarmOn = alarmOn;
-    }
 }

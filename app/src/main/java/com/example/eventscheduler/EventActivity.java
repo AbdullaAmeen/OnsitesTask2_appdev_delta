@@ -57,9 +57,11 @@ public class EventActivity extends AppCompatActivity implements DatePicker.OnDat
             Button button = (Button) v;
             if(button.getId() == R.id.bt_delete){
                 delete();
+                finish();
             }
-            else
+            else {
                 save();
+            }
         };
         bt_save.setOnClickListener(onClickListener);
         bt_delete.setOnClickListener(onClickListener);
@@ -103,32 +105,76 @@ public class EventActivity extends AppCompatActivity implements DatePicker.OnDat
 
     @RequiresApi(api = Build.VERSION_CODES.M)
     private void getData() {
-        Intent intent = getIntent();
-
-        pos=intent.getIntExtra("Pos", -1);
         List<Events> events = new ArrayList<>();
-        if(dataManager.getData(context) != null && pos !=-1) {
+        if(dataManager.getData(context) != null)
             events.addAll(dataManager.getData(context));
-            event=events.get(pos);
-            et_eventDesc.setText(event.getEventDesc());
-            et_eventName.setText(event.getEventName());
-            timePicker.setHour(event.getC().get(Calendar.HOUR_OF_DAY));
-            timePicker.setMinute(event.getC().get(Calendar.MINUTE));
-        }
-        else
-            event = new Events();
 
+        Intent intent = getIntent();
+        pos=intent.getIntExtra("Pos", -2);
+        if(intent.getBooleanExtra("Cancel",false)) {
+            Log.v("afterTImeTest", "Yo we backk");
+
+            int id = intent.getIntExtra("Id", -1);
+            Log.v("IdealId",""+id);
+            for (Events events1 : events){
+                if (id == events1.getId()) {
+                    event = events1;
+                    pos = events.indexOf(events1);
+                    delete();
+                    Intent intent1 = new Intent(this, MainActivity.class);
+                    startActivity(intent1);
+                    finishAffinity();
+                    Log.v("delete","delete");
+                    return;
+                }
+            }
+            return;
+
+        }
+
+        else if(!events.isEmpty()){
+
+            if(pos == -1 ) {
+                event = new Events();
+                event.setId((int) (System.currentTimeMillis() & 0xfffffff));
+            }
+            else{
+                event = events.get(pos);
+                setEvents();
+            }
+
+        }
+        else {
+            pos =0;
+            event = new Events();
+            event.setId((int) (System.currentTimeMillis() & 0xfffffff));
+        }
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    private void setEvents() {
+        et_eventDesc.setText(event.getEventDesc());
+        et_eventName.setText(event.getEventName());
+        timePicker.setHour(event.getC().get(Calendar.HOUR_OF_DAY));
+        timePicker.setMinute(event.getC().get(Calendar.MINUTE));
+        updateView(event.getC());
     }
 
     private void delete() {
+        cancelAlarm();
         List<Events> events = new ArrayList<>();
         if(dataManager.getData(context) == null)
             finish();
         else {
             events.addAll(dataManager.getData(context));
-            events.remove(pos);
+            if(pos == 0 || pos ==-1) {
+                events.clear();
+            }
+            else{
+                events.remove(pos);
+            }
             dataManager.saveData(events, context);
-            finish();
+            //finish();
         }
     }
 
@@ -140,32 +186,79 @@ public class EventActivity extends AppCompatActivity implements DatePicker.OnDat
             Log.d("tagg","nodiea");
             return;
         }
-        if(event.getC().before(Calendar.getInstance())) {
-            Toast.makeText(context, "Scheduled for Tomorrow", Toast.LENGTH_SHORT).show();
-            event.getC().add(Calendar.DATE, 1);
 
-        }
-        event.setAlarmOn(true);
+
         event.setEventName(et_eventName.getText().toString());
-        event.setEventDesc(et_eventDesc.getText().toString());
+        if(et_eventDesc.getText().length()==0){
+            event.setEventDesc("Reminder");
+        }
+        else
+            event.setEventDesc(et_eventDesc.getText().toString());
+
+
+
         List<Events> events = new ArrayList<>();
         if(dataManager.getData(context) != null)
             events.addAll(dataManager.getData(context));
-        events.add(event);
+
+        if(events.isEmpty()){
+            events.add(event);
+        }
+        else {
+            for (Events events1 : events)
+                if (event.getEventName().equals(events1.getEventName())) {
+                    Toast.makeText(context, "Already Scheduled Event", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+            if (event.getC().before(Calendar.getInstance())) {
+                Toast.makeText(context, "Scheduled for Tomorrow", Toast.LENGTH_SHORT).show();
+                event.getC().add(Calendar.DATE, 1);
+            }
+            boolean flag = true;
+            for (Events events1 : events) {
+                if (event.getC().after(events1.getC())) {
+                    events.add(events.indexOf(events1), event);
+                    flag = false;
+                    break;
+                }
+            }
+            if(flag)
+                events.add(event);
+        }
         dataManager.saveData(events,context);
         setAlarm();
         finish();
+
 
     }
 
     private void setAlarm() {
         Log.v("set","SetAlarm");
+
         AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
         Intent intent = new Intent(this, NotificationManagement.class);
         intent.putExtra("Name",event.getEventName());
         intent.putExtra("Desc",event.getEventDesc());
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(this,pos,intent,0);
+        intent.putExtra("Id",event.getId());
+        Calendar calendar=(Calendar) event.getC().clone();
+        calendar.add(Calendar.MINUTE,-15);
+
+
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(this,event.getId() ,intent,PendingIntent.FLAG_UPDATE_CURRENT);
+
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+
+            if(calendar.after(Calendar.getInstance())) {
+                Log.v("afterTImeTest","Aftertimetest"+calendar.getTime().toString());
+                intent.putExtra("fifteen",true);
+                PendingIntent pendingIntent2 = PendingIntent.getBroadcast(this,Integer.MAX_VALUE - pos,intent,PendingIntent.FLAG_UPDATE_CURRENT);
+                alarmManager.setExact(AlarmManager.RTC, calendar.getTimeInMillis(), pendingIntent2);
+            }
+            else
+                intent.putExtra("fifteen",false);
+
             alarmManager.setExact(AlarmManager.RTC, event.getC().getTimeInMillis(), pendingIntent);
             Log.v("set","SetExact");
         }
@@ -173,10 +266,11 @@ public class EventActivity extends AppCompatActivity implements DatePicker.OnDat
             alarmManager.set(AlarmManager.RTC, event.getC().getTimeInMillis(), pendingIntent);
 
     }
-    private void cancelAlarm(Calendar calendar){
+    private void cancelAlarm(){
         AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
         Intent intent = new Intent(this, NotificationManagement.class);
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(this,pos,intent,0);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(this,event.getId(),intent,0);
+        alarmManager.cancel(pendingIntent);
 
     }
 
